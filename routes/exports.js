@@ -49,7 +49,7 @@ router.get('/members/excel',async(req,res)=>{
      }
     });
 
-    router.get('/finances/pdf',async(req,res)=>{
+    router.get('/finances/pdf',async(req,res)=> {
         try{
             const connection=await pool.getConnection();
             const [finances]=await connection.query(
@@ -68,4 +68,44 @@ router.get('/members/excel',async(req,res)=>{
             doc.text('Financial Report',20,10);
 
             let yPos=30;
-            finances.slice(0,20)
+            finances.slice(0,20).forEach((record)=>{
+                if(yPos>280){
+                    doc.addPage();
+                    yPos=10;
+                }
+                doc.text(`${record.transaction_type.toUpperCase()}: $${record.amount} - ${record.category}`,20,yPos);
+                yPos+=10;
+            });
+            doc.text(`Total Income: $${totals[0].total_income || 0}`,20,yPos+10);
+            doc.text(`Total Expense: $${totals[0].total_expense || 0}`,20,yPos+20);
+
+            res.setHeader('Content-Type','application/pdf');
+            res.send(doc.output('arraybuffer'));
+            }catch(error){
+                res.status(500).json({ error:error.message });
+            }
+    });
+
+  
+ router.get('/finances/excel',async(req,res)=>{
+    try{
+        const connection=await pool.getConnection();
+        const [finances]=await connection.query(
+            `SELECT f.*,m.name as member_name FROM finances f LEFT JOIN members m ON f.member_id = m.id ORDER BY
+            f.transaction_date DESC`
+        );
+        connection.release();
+
+        const worksheet=xlsx.utils.json_to_sheet(finances);
+        const workbook=xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(workbook,worksheet,'Finances');
+
+        res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition','attachment; filename=finances.xlsx');
+        res.send(xlsx.write(workbook,{bookType:'xlsx',type:'buffer'}));
+     }catch(error){
+        res.status(500).json({ error:error.message });
+     }
+    });
+
+    module.exports=router;
