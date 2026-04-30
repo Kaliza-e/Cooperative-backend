@@ -26,26 +26,60 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Check if loan exists
-    const [loans] = await db.query('SELECT * FROM loans WHERE id = ?', [loan_id]);
+    // Check loan exists
+    const [loans] = await db.query(
+      'SELECT * FROM loans WHERE id = ?',
+      [loan_id]
+    );
+
     if (loans.length === 0) {
       return res.status(404).json({ error: 'Loan not found' });
     }
 
+    const loan = loans[0];
+
+    // Check total paid so far
+    const [payments] = await db.query(
+      'SELECT SUM(amount_paid) as total FROM loan_payments WHERE loan_id = ?',
+      [loan_id]
+    );
+
+    const totalPaid = payments[0].total || 0;
+
+    const remaining = loan.amount - totalPaid;
+
+    // Prevent overpayment
+    if (amount_paid > remaining) {
+      return res.status(400).json({
+        error: `Overpayment not allowed. Remaining balance: ${remaining}`
+      });
+    }
+
+    // Insert payment
     const query = `
-      INSERT INTO loan_payments (loan_id, payment_date, amount_paid, payment_method, notes)
+      INSERT INTO loan_payments
+      (loan_id, payment_date, amount_paid, payment_method, notes)
       VALUES (?, ?, ?, ?, ?)
     `;
-    const [result] = await db.query(query, [loan_id, payment_date, amount_paid, payment_method, notes]);
+
+    const [result] = await db.query(query, [
+      loan_id,
+      payment_date,
+      amount_paid,
+      payment_method,
+      notes
+    ]);
 
     res.status(201).json({
       id: result.insertId,
-      message: 'Payment recorded successfully',
+      message: 'Payment recorded successfully'
     });
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // Get payment by ID
 router.get('/:id', async (req, res) => {

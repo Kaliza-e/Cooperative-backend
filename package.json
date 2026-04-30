@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "init-db": "node init-db.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -16,7 +19,8 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jspdf": "^4.2.1",
-    "mysql2": "^3.22.2",
+    "mysql2": "^3.22.1",
+    "pdfkit": "^0.18.0",
     "xlsx": "^0.18.5"
   }
 }

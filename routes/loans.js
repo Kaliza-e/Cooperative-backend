@@ -49,17 +49,23 @@ router.get('/:id',async(req,res)=>{
 router.get('/member/:member_id',async(req,res)=>{
     try{
         const query=
-        `SELECT l.*, m.name as member_name,
-        (SELECT SUM(amount_paid) FROM 
-        loan_payments
-        WHERE loan_id = l.id) as total_paid,
-        (l.amount - COALESCE((
-        SELECT SUM(amount_paid) FROM loan_payments
-        WHERE loan_id = l.id), 0)) as remaining_balance
+        `SELECT l.*,
+       m.name as member_name,
+
+       COALESCE((
+         SELECT SUM(lp.amount_paid)
+         FROM loan_payments lp
+         WHERE lp.loan_id = l.id
+       ), 0) as total_paid,
+       (l.amount - COALESCE((
+         SELECT SUM(lp.amount_paid)
+         FROM loan_payments lp
+         WHERE lp.loan_id = l.id
+       ), 0)) as remaining_balance
         FROM loans l
-        LEFT JOIN members m ON l.member_id = m.id
-        WHERE l.member_id = ?
-        ORDER BY l.created_at DESC`;
+         LEFT JOIN members m ON l.member_id = m.id
+         WHERE l.member_id = ?
+         ORDER BY l.created_at DESC;`
 
         const [loans]=await pool.query(query,[req.params.member_id]);
         res.json(loans);
