@@ -17,6 +17,7 @@ app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/finances', require('./routes/finances'));
 app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/exports', require('./routes/exports'));
+app.use('/api/auth', require('./routes/auth'));
 
 
 // Health check
