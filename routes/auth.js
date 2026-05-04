@@ -15,7 +15,7 @@ router.post('/register', async (req, res) => {
     // Check if user exists
     const [existingUsers] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     if (existingUsers.length > 0) {
-      return res.status(400).json({ error: 'User already exists' });
+      return res.status(400).json({ message: 'User already exists' });
     }
 
     // Hash password
@@ -41,7 +41,15 @@ router.post('/register', async (req, res) => {
       { expiresIn: '24h' },
       (err, token) => {
         if (err) throw err;
-        res.json({ token });
+        res.json({
+          token,
+          user: {
+            id: result.insertId,
+            name,
+            email,
+            role: role || 'staff'
+          }
+        });
       }
     );
   } catch (err) {
@@ -60,7 +68,7 @@ router.post('/login', async (req, res) => {
     // Check if user exists
     const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     if (users.length === 0) {
-      return res.status(400).json({ error: 'Invalid Credentials' });
+      return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     const user = users[0];
@@ -68,7 +76,7 @@ router.post('/login', async (req, res) => {
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ error: 'Invalid Credentials' });
+      return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     // Create JWT
@@ -84,7 +92,15 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' },
       (err, token) => {
         if (err) throw err;
-        res.json({ token });
+        res.json({
+          token,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+          }
+        });
       }
     );
   } catch (err) {
