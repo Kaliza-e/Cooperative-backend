@@ -18,6 +18,8 @@ app.use('/api/finances', require('./routes/finances'));
 app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/exports', require('./routes/exports'));
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/loans', require('./routes/loans'));
+app.use('/api/loan-payments', require('./routes/loan-payments'));
 
 
 // Health check
