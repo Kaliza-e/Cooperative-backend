@@ -87,4 +87,46 @@ router.get('/finances/excel', async (req, res) => {
   }
 });
 
+// Export finances to PDF
+router.get('/finances/pdf', async (req, res) => {
+  try {
+    const connection = await pool.getConnection();
+    const [finances] = await connection.query(
+      `SELECT f.*, m.name as member_name
+       FROM finances f
+       LEFT JOIN members m ON f.member_id = m.id
+       ORDER BY f.transaction_date DESC`
+    );
+    connection.release();
+
+    const doc = new jsPDF();
+    doc.text('Cooperative Financial Report', 20, 10);
+
+    let yPos = 30;
+    finances.forEach((record, index) => {
+      if (yPos > 280) {
+        doc.addPage();
+        yPos = 10;
+      }
+      doc.text(
+        `${index + 1}. [${String(record.transaction_type).toUpperCase()}] $${record.amount} - ${record.category || 'General'}`,
+        20,
+        yPos
+      );
+      doc.text(
+        `   Date: ${new Date(record.transaction_date).toLocaleDateString()} | ${record.description || ''}`,
+        20,
+        yPos + 5
+      );
+      yPos += 15;
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=finances.pdf');
+    res.send(doc.output('arraybuffer'));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
